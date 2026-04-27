@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipment Engineering PR Pre-Approval</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background-color: #f4f7f6; }
+        .form-group { margin-bottom: 15px; position: relative; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .refine-btn { 
+            position: absolute; right: 0; top: 0; 
+            background: none; border: none; color: #0078d4; 
+            font-size: 12px; cursor: pointer; text-decoration: underline; 
+        }
+        .refine-btn:hover { color: #005a9e; }
+        button.primary { background-color: #0078d4; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px; font-weight: bold; }
+        button.primary:hover { background-color: #005a9e; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 4px; display: none; }
+        .Approved { background-color: #dff6dd; color: #107c10; border: 1px solid #107c10; }
+        .Rejected { background-color: #fde7e9; color: #a80000; border: 1px solid #a80000; }
+    </style>
+</head>
+<body>
+    <h2>PR Pre-Approval Request</h2>
+    <p>Use AI to refine your notes into professional engineering requests.</p>
+    <div id="prForm">
+        <div class="form-group"><label>Requestor</label><input type="text" id="requestor"></div>
+        <div class="form-group"><label>Area/Dept</label><input type="text" id="area"></div>
+        
+        <div class="form-group">
+            <label>Problem Statement</label>
+            <button class="refine-btn" onclick="refineField('problem')">✨ Refine with AI</button>
+            <textarea id="problem" rows="3" placeholder="e.g. machine 1 is leaking oil"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>Current Situation</label>
+            <button class="refine-btn" onclick="refineField('current_situation')">✨ Refine with AI</button>
+            <textarea id="current_situation" rows="3" placeholder="e.g. we tried tightening the bolts but it didn't work"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>Next Step</label>
+            <button class="refine-btn" onclick="refineField('next_step')">✨ Refine with AI</button>
+            <textarea id="next_step" rows="3" placeholder="e.g. buy a new seal kit"></textarea>
+        </div>
+        
+        <button class="primary" onclick="submitPR()">Submit for Final Review</button>
+        <button onclick="exportReport()" style="background-color: #217346; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer;">Download Excel Report</button>
+    </div>
+    <div id="result"></div>
+
+    <script>
+        const API_URL = "http://localhost:8000"; 
+
+        async function refineField(id) {
+            const textArea = document.getElementById(id);
+            const originalText = textArea.value.trim();
+            if (!originalText) {
+                alert("Please type some rough notes first.");
+                return;
+            }
+
+            const btn = event.target;
+            const originalBtnText = btn.innerText;
+            btn.innerText = "Refining...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}/refine-field`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field_name: id, content: originalText })
+                });
+                const result = await response.json();
+                textArea.value = result.refined_text;
+            } catch (error) {
+                console.error("Refine error:", error);
+            } finally {
+                btn.innerText = originalBtnText;
+                btn.disabled = false;
+            }
+        }
+
+        async function submitPR() {
+            const fields = ['requestor', 'area', 'problem', 'current_situation', 'next_step'];
+            const data = {};
+            
+            for (const id of fields) {
+                const val = document.getElementById(id).value.trim();
+                if (!val) {
+                    alert(`Please fill out the ${id.replace('_', ' ')} field.`);
+                    return;
+                }
+                data[id] = val;
+            }
+
+            const resultDiv = document.getElementById('result');
+            const submitBtn = document.querySelector('button.primary');
+            
+            submitBtn.disabled = true;
+            resultDiv.style.display = 'block';
+            resultDiv.className = '';
+            resultDiv.innerHTML = "<em>Analyzing engineering logic... please wait.</em>";
+
+            try {
+                const response = await fetch(`${API_URL}/submit-pr`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                
+                resultDiv.className = result.status;
+                let html = `<strong>Decision: ${result.status}</strong><br><p>${result.feedback}</p>`;
+                
+                if (result.coaching_tips && result.coaching_tips.length > 0) {
+                    html += `<strong>Coaching Tips:</strong><ul>`;
+                    result.coaching_tips.forEach(tip => {
+                        html += `<li>${tip}</li>`;
+                    });
+                    html += `</ul>`;
+                }
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerText = "Error: Backend server not reachable.";
+                resultDiv.className = 'Rejected';
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        function exportReport() {
+            window.location.href = `${API_URL}/export-report`;
+        }
+    </script>
+</body>
+</html>
