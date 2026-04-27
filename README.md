@@ -9,10 +9,33 @@ A professional engineering tool for the Equipment Engineering team to pre-assess
 - **📊 Excel Reporting:** One-click download of the entire PR history for management audit.
 - **🛡️ Secure Architecture:** Decoupled Frontend/Backend with environment-variable secret protection.
 
-## 📂 Project Structure
-- `frontend/`: The web interface (HTML/JS) hosted on Firebase Hosting.
-- `backend/`: Python FastAPI server (Gemini AI + Firebase Admin SDK).
-- `firebase.json`: Configuration for Firebase Hosting.
+## 📂 Project Structure & File Details
+
+### Root Directory
+- **`README.md`**: This document; project overview and setup guide.
+- **`firebase.json`**: Configuration file for Firebase. It tells Firebase Hosting to serve files from the `frontend/` folder and ignores backend files.
+- **`.firebaserc`**: Stores your Firebase project ID (`purchase-requisition-962f9`) to ensure commands target the correct cloud project.
+- **`.gitignore`**: Security file that prevents sensitive data (`.env`, `serviceAccountKey.json`) and temporary files from being uploaded to GitHub.
+- **`startingpoint.md`**: The original project scope and roadmap document.
+
+### `frontend/` (The User Interface)
+- **`index.html`**: A standalone web application.
+  - **HTML5/CSS3**: Modern, responsive layout styled for professional engineering use.
+  - **JavaScript (Async/Fetch)**: Communicates with the Python API. It includes:
+    - `refineField()`: Sends rough notes to AI for professional rewriting.
+    - `submitPR()`: Validates inputs locally before sending the final PR for AI evaluation.
+    - `exportReport()`: Triggers the Excel download from the backend.
+
+### `backend/` (The AI & Database Engine)
+- **`api.py`**: The core "Brain" of the system built with **FastAPI**.
+  - **FastAPI Endpoints**:
+    - `/submit-pr`: Receives PR data, runs it through the Gemini rubric, logs results to Firestore, and returns the decision.
+    - `/refine-field`: Provides quick AI-assisted documentation cleanup.
+    - `/export-report`: Streams data from Firestore and converts it to a `.xlsx` file.
+  - **Gemini Integration**: Uses the `google-genai` SDK with a strict engineering rubric.
+  - **Firebase Admin SDK**: Securely writes and reads data from Firestore.
+- **`.env`**: (Private) Stores your `GEMINI_API_KEY`.
+- **`serviceAccountKey.json`**: (Private) Your secret "keycard" from Firebase that allows the Python code to talk to your database.
 
 ## 🛠️ Setup Instructions
 
