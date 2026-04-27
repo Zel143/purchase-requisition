@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 1. Initialize Firebase Admin SDK
-# Ensure 'serviceAccountKey.json' is in the same directory
+# Path is relative to this script
 try:
     cred = credentials.Certificate("serviceAccountKey.json")
     firebase_admin.initialize_app(cred)
